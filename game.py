@@ -1,11 +1,16 @@
 
 import pygame
 import sys
+import random
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE, WALL, BLACK, WALL_DENSITY
-
-import random
+from settings import (
+    WIDTH, HEIGHT, FPS,
+    COLS, ROWS,
+    GRID_COLOR, GRID_LINE_WIDTH,
+    BACKGROUND_COLOR,
+    FREE, WALL, BLACK, WALL_DENSITY
+)
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -26,22 +31,43 @@ CELL_WIDTH = WIDTH / COLS
 # محاسبه ارتفاع هر خانه بر اساس تعداد سطرها
 CELL_HEIGHT = HEIGHT / ROWS
 
-# ساخت ماتریس محیط بازی
-# هر خانه در ابتدا با مقدار FREE مشخص می‌شود
-grid = [
-    [FREE for _ in range(COLS)]
-    for _ in range(ROWS)
-]
 
-# محاسبه تعداد دیوارهای موردنیاز بر اساس تراکم مشخص‌شده
-wall_count = int(ROWS * COLS * WALL_DENSITY)
+def generate_grid():
+    """
+    ساخت ماتریس محیط بازی و ایجاد دیوارهای تصادفی
+    """
 
-# انتخاب تصادفی خانه‌ها و تبدیل آن‌ها به دیوار
-for _ in range(wall_count):
-    row = random.randrange(ROWS)
-    col = random.randrange(COLS)
+    # ساخت ماتریس اولیه با خانه‌های خالی
+    grid = [
+        [FREE for _ in range(COLS)]
+        for _ in range(ROWS)
+    ]
 
-    grid[row][col] = WALL
+    # محاسبه تعداد دیوارهای موردنیاز
+    wall_count = int(ROWS * COLS * WALL_DENSITY)
+
+    # شمارش تعداد دیوارهای ایجادشده
+    created_walls = 0
+
+    # ادامه ساخت دیوار تا رسیدن به تعداد موردنظر
+    while created_walls < wall_count:
+
+        # انتخاب تصادفی یک خانه
+        row = random.randrange(ROWS)
+        col = random.randrange(COLS)
+
+        # فقط خانه‌های خالی به دیوار تبدیل می‌شوند
+        if grid[row][col] == FREE:
+            grid[row][col] = WALL
+            created_walls += 1
+
+    # برگرداندن ماتریس ساخته‌شده
+    return grid
+
+
+# تولید محیط بازی و دریافت ماتریس آن
+grid = generate_grid()
+
 
 def draw_grid(screen):
     """
@@ -77,6 +103,7 @@ def draw_grid(screen):
             GRID_LINE_WIDTH
         )
 
+
 def draw_walls(screen, grid):
     """
     رسم خانه‌هایی که مقدار آن‌ها WALL است
@@ -101,6 +128,7 @@ def draw_walls(screen, grid):
                     BLACK,
                     (x, y, CELL_WIDTH, CELL_HEIGHT)
                 )
+
 
 # متغیری برای کنترل اجرای حلقه اصلی بازی
 running = True
