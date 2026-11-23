@@ -3,7 +3,7 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -24,6 +24,40 @@ CELL_WIDTH = WIDTH / COLS
 # محاسبه ارتفاع هر خانه بر اساس تعداد سطرها
 CELL_HEIGHT = HEIGHT / ROWS
 
+def draw_grid(screen):
+    """
+    رسم خطوط عمودی و افقی محیط بازی
+    بر اساس تعداد سطرها و ستون‌ها
+    """
+
+    # رسم خطوط عمودی شبکه
+    for col in range(COLS + 1):
+        # محاسبه موقعیت افقی خط
+        x = col * CELL_WIDTH
+
+        # رسم خط عمودی
+        pygame.draw.line(
+            screen,
+            GRID_COLOR,
+            (x, 0),
+            (x, HEIGHT),
+            GRID_LINE_WIDTH
+        )
+
+    # رسم خطوط افقی شبکه
+    for row in range(ROWS + 1):
+        # محاسبه موقعیت عمودی خط
+        y = row * CELL_HEIGHT
+
+        # رسم خط افقی
+        pygame.draw.line(
+            screen,
+            GRID_COLOR,
+            (0, y),
+            (WIDTH, y),
+            GRID_LINE_WIDTH
+        )
+
 # متغیری برای کنترل اجرای حلقه اصلی بازی
 running = True
 
@@ -37,37 +71,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # پاک کردن صفحه و پر کردن آن با رنگ سفید
-    screen.fill(WHITE)
+    # پاک کردن صفحه و رنگ‌آمیزی پس‌زمینه محیط بازی
+    screen.fill(BACKGROUND_COLOR)
 
-    # رسم خطوط عمودی شبکه بر اساس تعداد ستون‌ها
-    for col in range(COLS + 1):
-        # محاسبه موقعیت افقی خط
-        x = col * CELL_WIDTH
-
-        # رسم خط عمودی با ضخامت مشخص‌شده
-        pygame.draw.line(
-            screen,
-            GRID_COLOR,
-            (x, 0),
-            (x, HEIGHT),
-            GRID_LINE_WIDTH
-        )
-
-
-    # رسم خطوط افقی شبکه بر اساس تعداد سطرها
-    for row in range(ROWS + 1):
-        # محاسبه موقعیت عمودی خط
-        y = row * CELL_HEIGHT
-
-        # رسم خط افقی با ضخامت مشخص‌شده
-        pygame.draw.line(
-            screen,
-            GRID_COLOR,
-            (0, y),
-            (WIDTH, y),
-            GRID_LINE_WIDTH
-        )
+    # رسم شبکه محیط بازی روی صفحه اصلی بازی
+    draw_grid(screen)
 
     # به‌روزرسانی صفحه نمایش و نمایش تصویر جدید
     pygame.display.flip()

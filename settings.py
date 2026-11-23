@@ -57,6 +57,10 @@ PURPLE = (170, 90, 230)
 CYAN = (40, 200, 210)
 PINK = (240, 100, 170)
 LIME = (150, 210, 60)
+
+# رنگ پس‌زمینه محیط بازی
+BACKGROUND_COLOR = WHITE
+
 # رنگ ماشین‌ها به ترتیب (حداکثر 8 ماشین)
 CAR_COLORS = [BLUE, RED, GREEN, ORANGE, PURPLE, CYAN, PINK, LIME]
 
