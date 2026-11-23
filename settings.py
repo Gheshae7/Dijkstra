@@ -86,3 +86,6 @@ WALL_COLORS = [
     (240, 230, 180),   # زرد کمرنگ
 ]
 BUILDING_KINDS = ["ac", "solar", "garden", "tank"]   # نوع وسایل روی سقف
+
+# رنگ خطوط شبکه بازی
+GRID_COLOR = (180, 180, 180)
