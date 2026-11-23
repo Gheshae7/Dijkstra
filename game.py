@@ -3,7 +3,7 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -23,6 +23,13 @@ CELL_WIDTH = WIDTH / COLS
 
 # محاسبه ارتفاع هر خانه بر اساس تعداد سطرها
 CELL_HEIGHT = HEIGHT / ROWS
+
+# ساخت ماتریس محیط بازی
+# هر خانه در ابتدا با مقدار FREE مشخص می‌شود
+grid = [
+    [FREE for _ in range(COLS)]
+    for _ in range(ROWS)
+]
 
 def draw_grid(screen):
     """
