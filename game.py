@@ -3,7 +3,7 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -45,8 +45,14 @@ while running:
         # محاسبه موقعیت افقی خط
         x = col * CELL_WIDTH
 
-        # رسم خط عمودی از بالای صفحه تا پایین آن
-        pygame.draw.line(screen, GRID_COLOR, (x, 0), (x, HEIGHT))
+        # رسم خط عمودی با ضخامت مشخص‌شده
+        pygame.draw.line(
+            screen,
+            GRID_COLOR,
+            (x, 0),
+            (x, HEIGHT),
+            GRID_LINE_WIDTH
+        )
 
 
     # رسم خطوط افقی شبکه بر اساس تعداد سطرها
@@ -54,8 +60,14 @@ while running:
         # محاسبه موقعیت عمودی خط
         y = row * CELL_HEIGHT
 
-        # رسم خط افقی از سمت چپ صفحه تا سمت راست آن
-        pygame.draw.line(screen, GRID_COLOR, (0, y), (WIDTH, y))
+        # رسم خط افقی با ضخامت مشخص‌شده
+        pygame.draw.line(
+            screen,
+            GRID_COLOR,
+            (0, y),
+            (WIDTH, y),
+            GRID_LINE_WIDTH
+        )
 
     # به‌روزرسانی صفحه نمایش و نمایش تصویر جدید
     pygame.display.flip()

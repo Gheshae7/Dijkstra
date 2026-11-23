@@ -89,3 +89,6 @@ BUILDING_KINDS = ["ac", "solar", "garden", "tank"]   # نوع وسایل روی 
 
 # رنگ خطوط شبکه بازی
 GRID_COLOR = (180, 180, 180)
+
+# ضخامت خطوط شبکه
+GRID_LINE_WIDTH = 1
