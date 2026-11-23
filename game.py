@@ -3,7 +3,7 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE, WALL, BLACK
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -30,6 +30,9 @@ grid = [
     [FREE for _ in range(COLS)]
     for _ in range(ROWS)
 ]
+
+# قرار دادن یک دیوار در مرکز محیط بازی
+grid[ROWS // 2][COLS // 2] = WALL
 
 def draw_grid(screen):
     """
@@ -65,6 +68,31 @@ def draw_grid(screen):
             GRID_LINE_WIDTH
         )
 
+def draw_walls(screen, grid):
+    """
+    رسم خانه‌هایی که مقدار آن‌ها WALL است
+    """
+
+    # پیمایش تمام سطرهای ماتریس
+    for row in range(ROWS):
+
+        # پیمایش تمام ستون‌های ماتریس
+        for col in range(COLS):
+
+            # بررسی اینکه خانه فعلی دیوار است یا خیر
+            if grid[row][col] == WALL:
+
+                # محاسبه موقعیت و ابعاد خانه
+                x = col * CELL_WIDTH
+                y = row * CELL_HEIGHT
+
+                # رسم دیوار به رنگ مشکی
+                pygame.draw.rect(
+                    screen,
+                    BLACK,
+                    (x, y, CELL_WIDTH, CELL_HEIGHT)
+                )
+
 # متغیری برای کنترل اجرای حلقه اصلی بازی
 running = True
 
@@ -81,7 +109,10 @@ while running:
     # پاک کردن صفحه و رنگ‌آمیزی پس‌زمینه محیط بازی
     screen.fill(BACKGROUND_COLOR)
 
-    # رسم شبکه محیط بازی روی صفحه اصلی بازی
+    # رسم دیوارهای محیط بازی
+    draw_walls(screen, grid)
+
+    # رسم خطوط شبکه روی محیط بازی
     draw_grid(screen)
 
     # به‌روزرسانی صفحه نمایش و نمایش تصویر جدید
