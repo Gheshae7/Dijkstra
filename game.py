@@ -3,7 +3,9 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE, WALL, BLACK
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS, GRID_COLOR, GRID_LINE_WIDTH, BACKGROUND_COLOR, FREE, WALL, BLACK, WALL_DENSITY
+
+import random
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -31,8 +33,15 @@ grid = [
     for _ in range(ROWS)
 ]
 
-# قرار دادن یک دیوار در مرکز محیط بازی
-grid[ROWS // 2][COLS // 2] = WALL
+# محاسبه تعداد دیوارهای موردنیاز بر اساس تراکم مشخص‌شده
+wall_count = int(ROWS * COLS * WALL_DENSITY)
+
+# انتخاب تصادفی خانه‌ها و تبدیل آن‌ها به دیوار
+for _ in range(wall_count):
+    row = random.randrange(ROWS)
+    col = random.randrange(COLS)
+
+    grid[row][col] = WALL
 
 def draw_grid(screen):
     """
