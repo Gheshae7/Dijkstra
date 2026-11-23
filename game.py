@@ -3,7 +3,7 @@ import pygame
 import sys
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
-from settings import WIDTH, HEIGHT, FPS, WHITE
+from settings import WIDTH, HEIGHT, FPS, WHITE, COLS, ROWS
 
 
 # راه‌اندازی اولیه کتابخانه Pygame
@@ -17,6 +17,12 @@ pygame.display.set_caption("Maze Game")
 
 # ساخت ساعت برای کنترل نرخ اجرای بازی (FPS)
 clock = pygame.time.Clock()
+
+# محاسبه عرض هر خانه بر اساس تعداد ستون‌ها
+CELL_WIDTH = WIDTH / COLS
+
+# محاسبه ارتفاع هر خانه بر اساس تعداد سطرها
+CELL_HEIGHT = HEIGHT / ROWS
 
 # متغیری برای کنترل اجرای حلقه اصلی بازی
 running = True
