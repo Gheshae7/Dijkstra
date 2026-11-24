@@ -48,26 +48,9 @@ CAR_COLORS,
     FPS,
     WHITE,
     MAX_SPEED,
+    CELL_SIZE,
+RANDOM_PLACEMENT,
 )
-
-
-# راه‌اندازی اولیه کتابخانه Pygame
-pygame.init()
-
-# ساخت پنجره بازی با عرض و ارتفاع مشخص‌شده در تنظیمات
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-# تعیین عنوان پنجره بازی
-pygame.display.set_caption("Maze Game")
-
-# ساخت ساعت برای کنترل نرخ اجرای بازی (FPS)
-clock = pygame.time.Clock()
-
-# محاسبه عرض هر خانه بر اساس تعداد ستون‌ها
-CELL_WIDTH = WIDTH / COLS
-
-# محاسبه ارتفاع هر خانه بر اساس تعداد سطرها
-CELL_HEIGHT = HEIGHT / ROWS
 
 
 def generate_grid():
@@ -2363,145 +2346,147 @@ def start_round(cars, random_mode):
     return world
 
 
-# تولید محیط بازی و دریافت ماتریس آن
-grid = generate_grid()
+# ======================================================================
+#                            برنامه‌ی اصلی
+# ======================================================================
 
-# ساخت گراف از روی ماز
-graph = build_graph(grid)
+def main():
+    """برنامه‌ی اصلی: پنجره را می‌سازد و حلقه‌ی بازی را اجرا می‌کند."""
 
-# اجرای الگوریتم Dijkstra
-path, visited_order = dijkstra(graph, START_POS, GOAL_POS)
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Pathfinding Showcase")
 
+    limiter = FrameLimiter(FPS)       # قفل دقیق FPS
+    fonts = make_fonts()
 
-def draw_grid(screen):
-    """
-    رسم خطوط عمودی و افقی محیط بازی
-    بر اساس تعداد سطرها و ستون‌ها
-    """
+    cars = make_cars()                # تعداد و رنگ ماشین‌ها
+    random_mode = RANDOM_PLACEMENT    # True: جای ماشین‌ها هم تصادفی عوض می‌شود
+    world = start_round(cars, random_mode)
 
-    # رسم خطوط عمودی شبکه
-    for col in range(COLS + 1):
-        # محاسبه موقعیت افقی خط
-        x = col * CELL_WIDTH
+    selected = 0                      # ماشین انتخاب‌شده
+    toast_text, toast_until = "", 0   # پیام کوتاه و زمان پایانش
+    hud_rect = controls_rect = None
+    show_hud = True
+    dt = 0
+    running = True
 
-        # رسم خط عمودی
-        pygame.draw.line(
-            screen,
-            GRID_COLOR,
-            (x, 0),
-            (x, HEIGHT),
-            GRID_LINE_WIDTH
-        )
+    while running:
 
-    # رسم خطوط افقی شبکه
-    for row in range(ROWS + 1):
-        # محاسبه موقعیت عمودی خط
-        y = row * CELL_HEIGHT
+        # 1) گرفتن رویدادها (کلیک، کیبورد، بستن پنجره)
+        for event in pygame.event.get():
+            now = pygame.time.get_ticks()
 
-        # رسم خط افقی
-        pygame.draw.line(
-            screen,
-            GRID_COLOR,
-            (0, y),
-            (WIDTH, y),
-            GRID_LINE_WIDTH
-        )
+            if event.type == pygame.QUIT:
+                running = False
 
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button in (1, 3):
 
-def draw_walls(screen, grid):
-    """
-    رسم خانه‌هایی که مقدار آن‌ها WALL است
-    """
+                # کلیک روی نوارها نباید روی نقشه اثر بگذارد
+                if inside(hud_rect, event.pos) or inside(controls_rect, event.pos):
+                    continue
 
-    # پیمایش تمام سطرهای ماتریس
-    for row in range(ROWS):
+                if not is_idle(cars):
+                    toast_text, toast_until = "Wait until the cars stop", now + 1800
+                    continue
 
-        # پیمایش تمام ستون‌های ماتریس
-        for col in range(COLS):
-
-            # بررسی اینکه خانه فعلی دیوار است یا خیر
-            if grid[row][col] == WALL:
-
-                # محاسبه موقعیت و ابعاد خانه
-                x = col * CELL_WIDTH
-                y = row * CELL_HEIGHT
-
-                # رسم دیوار به رنگ مشکی
-                pygame.draw.rect(
-                    screen,
-                    BLACK,
-                    (x, y, CELL_WIDTH, CELL_HEIGHT)
+                cell = (
+                    event.pos[1] // CELL_SIZE,
+                    event.pos[0] // CELL_SIZE
                 )
 
+                kind = "start" if event.button == 1 else "goal"
 
-def draw_positions(screen):
-    """
-    رسم نقطه شروع و مقصد روی محیط بازی
-    """
+                ok, toast_text = try_place_point(
+                    cars, world, selected, kind, cell
+                )
 
-    # رسم نقطه شروع
-    start_row, start_col = START_POS
+                toast_until = now + 1800
 
-    pygame.draw.rect(
-        screen,
-        START_COLOR,
-        (
-            start_col * CELL_WIDTH,
-            start_row * CELL_HEIGHT,
-            CELL_WIDTH,
-            CELL_HEIGHT
+                if ok:
+                    random_mode = False
+                    world.shared = plan_all(cars, world.graph)
+
+            elif event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_n:
+                    # ماز جدید
+                    world = start_round(cars, random_mode)
+
+                elif event.key == pygame.K_r:
+                    # پخش دوباره روی همین ماز
+                    world.shared = plan_all(cars, world.graph)
+
+                    for car in cars:
+                        car.begin()
+
+                elif event.key == pygame.K_SPACE:
+                    # شروع ماشین‌های آماده
+                    for car in cars:
+                        car.begin()
+
+                elif event.key == pygame.K_c:
+                    # جای تصادفی جدید برای ماشین‌ها روی همین ماز
+                    if not is_idle(cars):
+                        toast_text, toast_until = "Wait until the cars stop", now + 1800
+
+                    elif place_cars_randomly(cars, world.graph):
+                        random_mode = True
+                        world.shared = plan_all(cars, world.graph)
+
+                    else:
+                        toast_text, toast_until = "No room for the cars", now + 1800
+
+                elif event.key == pygame.K_h:
+                    # نمایش / پنهان کردن نوار بالا
+                    show_hud = not show_hud
+
+                elif pygame.K_1 <= event.key <= pygame.K_9:
+                    # انتخاب ماشین
+                    index = event.key - pygame.K_1
+
+                    if index < len(cars):
+                        selected = index
+                        toast_text = f"Car {index + 1} selected"
+                        toast_until = now + 1200
+
+        # 2) به‌روزرسانی وضعیت ماشین‌ها
+        for car in cars:
+            update_car(car, dt)
+
+        # 3) رسم اجزای بازی (ترتیب لایه‌ها مهم است)
+        screen.blit(world.background, (0, 0))
+
+        for car in cars:
+            draw_search(screen, car)
+
+        for car in cars:
+            draw_trail(screen, car)
+
+        draw_merged_routes(screen, cars)
+        draw_cars(screen, cars, selected)
+
+        controls_rect = draw_controls_bar(screen, fonts, cars)
+
+        bottom = controls_rect[1] - 10 if controls_rect else HEIGHT - 22
+
+        draw_start_prompt(screen, fonts, cars, bottom)
+
+        if pygame.time.get_ticks() < toast_until:
+            draw_toast(screen, fonts, toast_text)
+
+        hud_rect = (
+            draw_hud(screen, fonts, limiter, cars, world, random_mode, selected)
+            if show_hud else None
         )
-    )
 
-    # رسم نقطه مقصد
-    goal_row, goal_col = GOAL_POS
+        pygame.display.flip()
 
-    pygame.draw.rect(
-        screen,
-        GOAL_COLOR,
-        (
-            goal_col * CELL_WIDTH,
-            goal_row * CELL_HEIGHT,
-            CELL_WIDTH,
-            CELL_HEIGHT
-        )
-    )
+        # 4) صبر تا فریم بعدی و گرفتن مدت فریم
+        dt = min(limiter.wait(), 100)
+
+    pygame.quit()
 
 
-# متغیری برای کنترل اجرای حلقه اصلی بازی
-running = True
-
-# حلقه اصلی بازی؛ تا زمانی که running برابر True باشد ادامه دارد
-while running:
-
-    # بررسی رویدادهای اتفاق‌افتاده، مثل کلیک روی دکمه بستن پنجره
-    for event in pygame.event.get():
-
-        # اگر کاربر پنجره را ببندد، حلقه بازی متوقف می‌شود
-        if event.type == pygame.QUIT:
-            running = False
-
-    # پاک کردن صفحه
-    screen.fill(BACKGROUND_COLOR)
-
-    # رسم دیوارها
-    draw_walls(screen, grid)
-
-    # رسم نقطه شروع و مقصد
-    draw_positions(screen)
-
-    # رسم خطوط شبکه
-    draw_grid(screen)
-
-    # به‌روزرسانی صفحه نمایش و نمایش تصویر جدید
-    pygame.display.flip()
-
-    # محدود کردن سرعت اجرای حلقه بازی بر اساس مقدار FPS
-    clock.tick(FPS)
-
-
-# خروج صحیح از Pygame پس از پایان حلقه اصلی
-pygame.quit()
-
-# پایان دادن به اجرای برنامه پایتون
-sys.exit()
+if __name__ == "__main__":
+    main()
