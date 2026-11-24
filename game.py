@@ -9,7 +9,7 @@ from settings import (
     COLS, ROWS,
     GRID_COLOR, GRID_LINE_WIDTH,
     BACKGROUND_COLOR,
-    FREE, WALL, BLACK, WALL_DENSITY
+    FREE, WALL, BLACK, WALL_DENSITY, START_POS, GOAL_POS, START_COLOR, GOAL_COLOR
 )
 
 
@@ -46,22 +46,23 @@ def generate_grid():
     # محاسبه تعداد دیوارهای موردنیاز
     wall_count = int(ROWS * COLS * WALL_DENSITY)
 
-    # شمارش تعداد دیوارهای ایجادشده
     created_walls = 0
 
-    # ادامه ساخت دیوار تا رسیدن به تعداد موردنظر
     while created_walls < wall_count:
 
         # انتخاب تصادفی یک خانه
         row = random.randrange(ROWS)
         col = random.randrange(COLS)
 
-        # فقط خانه‌های خالی به دیوار تبدیل می‌شوند
-        if grid[row][col] == FREE:
+        # بررسی خالی بودن خانه و رزرو نقاط شروع و مقصد
+        if (
+            grid[row][col] == FREE
+            and (row, col) != START_POS
+            and (row, col) != GOAL_POS
+        ):
             grid[row][col] = WALL
             created_walls += 1
 
-    # برگرداندن ماتریس ساخته‌شده
     return grid
 
 
@@ -130,6 +131,40 @@ def draw_walls(screen, grid):
                 )
 
 
+def draw_positions(screen):
+    """
+    رسم نقطه شروع و مقصد روی محیط بازی
+    """
+
+    # رسم نقطه شروع
+    start_row, start_col = START_POS
+
+    pygame.draw.rect(
+        screen,
+        START_COLOR,
+        (
+            start_col * CELL_WIDTH,
+            start_row * CELL_HEIGHT,
+            CELL_WIDTH,
+            CELL_HEIGHT
+        )
+    )
+
+    # رسم نقطه مقصد
+    goal_row, goal_col = GOAL_POS
+
+    pygame.draw.rect(
+        screen,
+        GOAL_COLOR,
+        (
+            goal_col * CELL_WIDTH,
+            goal_row * CELL_HEIGHT,
+            CELL_WIDTH,
+            CELL_HEIGHT
+        )
+    )
+
+
 # متغیری برای کنترل اجرای حلقه اصلی بازی
 running = True
 
@@ -143,13 +178,16 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # پاک کردن صفحه و رنگ‌آمیزی پس‌زمینه محیط بازی
+    # پاک کردن صفحه
     screen.fill(BACKGROUND_COLOR)
 
-    # رسم دیوارهای محیط بازی
+    # رسم دیوارها
     draw_walls(screen, grid)
 
-    # رسم خطوط شبکه روی محیط بازی
+    # رسم نقطه شروع و مقصد
+    draw_positions(screen)
+
+    # رسم خطوط شبکه
     draw_grid(screen)
 
     # به‌روزرسانی صفحه نمایش و نمایش تصویر جدید
