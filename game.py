@@ -2,6 +2,7 @@
 import pygame
 import sys
 import random
+import heapq
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
 from settings import (
@@ -9,7 +10,7 @@ from settings import (
     COLS, ROWS,
     GRID_COLOR, GRID_LINE_WIDTH,
     BACKGROUND_COLOR,
-    FREE, WALL, BLACK, WALL_DENSITY, START_POS, GOAL_POS, START_COLOR, GOAL_COLOR
+    FREE, WALL, BLACK, WALL_DENSITY, START_POS, GOAL_POS, START_COLOR, GOAL_COLOR, DIRECTIONS, STEP_COST
 )
 
 
@@ -66,8 +67,116 @@ def generate_grid():
     return grid
 
 
+
+def get_neighbors(grid, cell):
+    """همسایه‌های آزاد یک خانه را در چهار جهت پیدا می‌کند."""
+
+    row, col = cell
+    neighbors = []
+
+    for dr, dc in DIRECTIONS:
+        nr, nc = row + dr, col + dc
+
+        # بررسی می‌کنیم خانه داخل محدوده ماز باشد.
+        inside = 0 <= nr < len(grid) and 0 <= nc < len(grid[0])
+
+        # فقط خانه‌های آزاد می‌توانند همسایه باشند.
+        if inside and grid[nr][nc] != WALL:
+            neighbors.append((nr, nc))
+
+    return neighbors
+
+
+def reconstruct_path(parent, start, goal):
+    """مسیر نهایی را از مقصد به شروع بازسازی می‌کند."""
+
+    path = [goal]
+    current = goal
+
+    while current != start:
+        current = parent[current]
+        path.append(current)
+
+    # مسیر را از شروع به مقصد مرتب می‌کنیم.
+    path.reverse()
+
+    return path
+
+
+def build_graph(grid):
+    """گراف ماز را از خانه‌های آزاد و همسایه‌های آن‌ها می‌سازد."""
+
+    graph = {}
+
+    for row in range(len(grid)):
+        for col in range(len(grid[0])):
+
+            if grid[row][col] != WALL:
+                cell = (row, col)
+
+                # هر همسایه همراه با هزینه حرکت ذخیره می‌شود.
+                graph[cell] = [
+                    (neighbor, STEP_COST)
+                    for neighbor in get_neighbors(grid, cell)
+                ]
+
+    return graph
+
+
+def dijkstra(graph, start, goal):
+    """کوتاه‌ترین مسیر را با الگوریتم Dijkstra پیدا می‌کند."""
+
+    if start not in graph or goal not in graph:
+        return [], []
+
+    dist = {start: 0}
+    parent = {}
+
+    visited = set()
+    visited_order = []
+
+    # صف اولویت بر اساس کمترین هزینه مسیر
+    heap = [(0, start)]
+
+    while heap:
+        d, current = heapq.heappop(heap)
+
+        # نادیده گرفتن خانه‌هایی که قبلاً بررسی شده‌اند.
+        if current in visited:
+            continue
+
+        visited.add(current)
+        visited_order.append(current)
+
+        # اگر به مقصد رسیدیم، جستجو تمام می‌شود.
+        if current == goal:
+            break
+
+        for neighbor, cost in graph[current]:
+            new_dist = d + cost
+
+            if new_dist < dist.get(neighbor, float("inf")):
+                dist[neighbor] = new_dist
+                parent[neighbor] = current
+
+                heapq.heappush(heap, (new_dist, neighbor))
+
+    # اگر مقصد پیدا نشده باشد، مسیر خالی برمی‌گردد.
+    if goal not in visited:
+        return [], visited_order
+
+    return reconstruct_path(parent, start, goal), visited_order
+
+
+
 # تولید محیط بازی و دریافت ماتریس آن
 grid = generate_grid()
+
+# ساخت گراف از روی ماز
+graph = build_graph(grid)
+
+# اجرای الگوریتم Dijkstra
+path, visited_order = dijkstra(graph, START_POS, GOAL_POS)
 
 
 def draw_grid(screen):
