@@ -5,6 +5,7 @@ import random
 import heapq
 import math
 import bisect
+import time
 
 # دریافت تنظیمات موردنیاز از فایل settings.py
 from settings import (
