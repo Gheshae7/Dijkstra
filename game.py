@@ -28,7 +28,7 @@ PREVIEW_TIME,
 TURN_SPEED,
 MIN_SPEED,
 SMOKE_LIFE,
-AHEAD_ALPHA,
+AHEAD_ALPHA, WHITE
 )
 
 
@@ -1039,6 +1039,179 @@ def draw_merged_routes(screen, cars):
 
             if k == len(merged) - 1 or not merged[k + 1]:
                 draw_node(screen, car.curve[k + 1])
+
+
+# وضعیت‌هایی که نشان می‌دهند ماشین هنوز مشغول انجام کار است
+BUSY_STATES = ("searching", "preview", "moving")
+
+
+def is_idle(cars):
+    """آیا همه‌ی ماشین‌ها ایستاده‌اند؟ (آماده یا تمام‌شده)"""
+    return not any(car.state in BUSY_STATES for car in cars)
+
+
+def draw_start_prompt(screen, fonts, cars, bottom):
+    """تا وقتی ماشین‌ها آماده‌ی شروع‌اند، پیام شروع را بالای y=bottom نشان می‌دهد."""
+    if not all(car.state == "ready" for car in cars):
+        return
+
+    pulse = (math.sin(pygame.time.get_ticks() / 300) + 1) / 2
+    label = fonts["big"].render("Press SPACE to start", True, WHITE)
+    w, h = label.get_width() + 40, label.get_height() + 18
+    x, y = (WIDTH - w) // 2, bottom - h
+
+    panel = pygame.Surface((w, h), pygame.SRCALPHA)
+    pygame.draw.rect(panel, (14, 17, 26, 215), (0, 0, w, h), border_radius=h // 2)
+    pygame.draw.rect(
+        panel,
+        (80, int(120 + 120 * pulse), 120, 255),
+        (0, 0, w, h),
+        2,
+        border_radius=h // 2
+    )
+
+    screen.blit(panel, (x, y))
+    screen.blit(label, (x + 20, y + 9))
+
+
+def draw_toast(screen, fonts, text):
+    """یک پیام کوتاه را وسط صفحه و بالای نوار راهنما نشان می‌دهد."""
+    label = fonts["body"].render(text, True, WHITE)
+    w, h = label.get_width() + 28, label.get_height() + 14
+    x, y = (WIDTH - w) // 2, HEIGHT - 175
+
+    panel = pygame.Surface((w, h), pygame.SRCALPHA)
+    pygame.draw.rect(panel, (14, 17, 26, 230), (0, 0, w, h), border_radius=h // 2)
+    pygame.draw.rect(panel, (255, 255, 255, 60), (0, 0, w, h), 1, border_radius=h // 2)
+
+    screen.blit(panel, (x, y))
+    screen.blit(label, (x + 14, y + 7))
+    
+    
+def draw_start(screen, row, col, color, selected=False):
+    """محل شروع را مثل یک جای پارک با کادر رنگی نشان می‌دهد."""
+    cx, cy = cell_center(row, col)
+
+    slot = pygame.Rect(0, 0, CELL_SIZE - 6, CELL_SIZE - 10)
+    slot.center = (cx, cy)
+
+    pygame.draw.rect(screen, color, slot, 2, border_radius=6)
+
+    if selected:
+        pygame.draw.rect(
+            screen,
+            WHITE,
+            (slot.x - 3, slot.y - 3, slot.w + 6, slot.h + 6),
+            1,
+            border_radius=9
+        )
+
+
+def draw_goal(screen, car):
+    """مقصد را با هاله، حلقه‌ی ضربان‌دار و پرچم شطرنجی نمایش می‌دهد."""
+    cx, cy = cell_center(*car.goal)
+
+    # هاله‌ی نرم زیر مقصد
+    screen.blit(car.goal_glow, car.goal_glow.get_rect(center=(cx, cy)))
+
+    # حلقه‌ای که با گذشت زمان کوچک و بزرگ می‌شود
+    pulse = (math.sin(pygame.time.get_ticks() / 250) + 1) / 2
+    radius = CELL_SIZE // 2 - 6 + int(pulse * 4)
+
+    pygame.draw.circle(screen, car.color, (cx, cy), radius, 3)
+
+    # میله‌ی پرچم
+    pole_x = cx - 6
+    pole_top = cy - 11
+
+    pygame.draw.line(
+        screen,
+        (235, 235, 235),
+        (pole_x, pole_top),
+        (pole_x, cy + 11),
+        2
+    )
+
+    # پرچم شطرنجی
+    for i in range(3):
+        for j in range(2):
+            color = (250, 250, 250) if (i + j) % 2 == 0 else (30, 30, 30)
+
+            pygame.draw.rect(
+                screen,
+                color,
+                (pole_x + 1 + i * 5, pole_top + j * 5, 5, 5)
+            )
+
+
+def draw_cars(screen, cars, selected=None):
+    """مقصد، محل شروع، دود، نور چراغ، سایه و خود ماشین‌ها را رسم می‌کند."""
+
+    for index, car in enumerate(cars):
+
+        # نمایش مقصد و محل شروع
+        draw_goal(screen, car)
+
+        draw_start(
+            screen,
+            car.start[0],
+            car.start[1],
+            car.color,
+            selected == index and car.state == "ready" and len(cars) > 1
+        )
+
+        # رسم ذرات دود اگزوز
+        for x, y, age in car.smoke:
+            index = min(
+                int(age / SMOKE_LIFE * len(car.smoke_frames)),
+                len(car.smoke_frames) - 1
+            )
+
+            frame = car.smoke_frames[index]
+            screen.blit(frame, frame.get_rect(center=(int(x), int(y))))
+
+        px, py = cell_center(*car.position)
+        px, py = int(px), int(py)
+
+        # نور چراغ جلو؛ فقط هنگام حرکت
+        if car.state == "moving":
+            rad = math.radians(car.angle)
+
+            dist = CAR_W // 2 + car.light.get_width() // 2 - 4
+
+            lx = px + math.cos(rad) * dist
+            ly = py - math.sin(rad) * dist
+
+            light = pygame.transform.rotozoom(car.light, car.angle, 1.0)
+
+            screen.blit(
+                light,
+                light.get_rect(center=(int(lx), int(ly)))
+            )
+
+        # چرخاندن تصویر ماشین و سایه بر اساس زاویه
+        image = pygame.transform.rotozoom(car.image, car.angle, 1.0)
+        shadow = pygame.transform.rotozoom(car.shadow, car.angle, 1.0)
+
+        # ابتدا سایه و سپس خود ماشین
+        screen.blit(shadow, shadow.get_rect(center=(px + 3, py + 4)))
+        screen.blit(image, image.get_rect(center=(px, py)))
+
+        # چراغ ترمز هنگام کاهش سرعت
+        if car.braking and car.state == "moving":
+            rad = math.radians(car.angle)
+
+            rear_x = px - math.cos(rad) * 17
+            rear_y = py + math.sin(rad) * 17
+
+            for side in (-7, 7):
+                bx = rear_x + math.sin(rad) * side
+                by = rear_y + math.cos(rad) * side
+
+                screen.blit(
+                    car.brake_glow,
+                    car.brake_glow.get_rect(center=(int(bx), int(by)))
+                )
 
 
 # تولید محیط بازی و دریافت ماتریس آن
